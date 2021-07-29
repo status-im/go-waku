@@ -15,6 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	ma "github.com/multiformats/go-multiaddr"
 	"go.opencensus.io/stats"
@@ -27,7 +28,6 @@ import (
 	"github.com/status-im/go-waku/waku/v2/protocol/pb"
 	"github.com/status-im/go-waku/waku/v2/protocol/relay"
 	"github.com/status-im/go-waku/waku/v2/protocol/store"
-	wakurelay "github.com/status-im/go-wakurelay-pubsub"
 )
 
 var log = logging.Logger("wakunode")
@@ -275,7 +275,7 @@ func (w *WakuNode) IsOnline() bool {
 	hasFilter := false
 	for _, v := range w.peers {
 		for _, protocol := range v {
-			if !hasRelay && protocol == string(wakurelay.WakuRelayID_v200) {
+			if !hasRelay && protocol == string(relay.WakuRelayID_v200) {
 				hasRelay = true
 			}
 			if !hasLightPush && protocol == string(lightpush.WakuLightPushProtocolId) {
@@ -324,7 +324,7 @@ func (w *WakuNode) Filter() *filter.WakuFilter {
 	return w.filter
 }
 
-func (w *WakuNode) mountRelay(shouldRelayMessages bool, opts ...wakurelay.Option) error {
+func (w *WakuNode) mountRelay(shouldRelayMessages bool, opts ...pubsub.Option) error {
 	var err error
 	w.relay, err = relay.NewWakuRelay(w.ctx, w.host, opts...)
 
