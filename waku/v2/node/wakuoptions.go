@@ -8,10 +8,10 @@ import (
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
 	"github.com/status-im/go-waku/waku/v2/protocol/store"
-	wakurelay "github.com/status-im/go-wakurelay-pubsub"
 )
 
 // Default clientId
@@ -24,7 +24,7 @@ type WakuNodeParameters struct {
 
 	enableRelay  bool
 	enableFilter bool
-	wOpts        []wakurelay.Option
+	wOpts        []pubsub.Option
 
 	enableStore bool
 	storeMsgs   bool
@@ -87,7 +87,7 @@ func WithLibP2POptions(opts ...libp2p.Option) WakuNodeOption {
 
 // WithWakuRelay enables the Waku V2 Relay protocol. This WakuNodeOption
 // accepts a list of WakuRelay gossipsub option to setup the protocol
-func WithWakuRelay(opts ...wakurelay.Option) WakuNodeOption {
+func WithWakuRelay(opts ...pubsub.Option) WakuNodeOption {
 	return func(params *WakuNodeParameters) error {
 		params.enableRelay = true
 		params.wOpts = opts
@@ -97,7 +97,7 @@ func WithWakuRelay(opts ...wakurelay.Option) WakuNodeOption {
 
 // WithWakuFilter enables the Waku V2 Filter protocol. This WakuNodeOption
 // accepts a list of WakuFilter gossipsub options to setup the protocol
-func WithWakuFilter(opts ...wakurelay.Option) WakuNodeOption {
+func WithWakuFilter(opts ...pubsub.Option) WakuNodeOption {
 	return func(params *WakuNodeParameters) error {
 		params.enableFilter = true
 		params.wOpts = opts
