@@ -7,6 +7,9 @@ deps: lint-install
 build:
 	go build -o build/waku waku.go
 
+vendor:
+	go mod tidy
+
 lint-install:
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
 		bash -s -- -b $(shell go env GOPATH)/bin v1.41.1
