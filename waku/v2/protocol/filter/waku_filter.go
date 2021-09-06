@@ -95,7 +95,7 @@ func (wf *WakuFilter) onRequest(s network.Stream) {
 		return
 	}
 
-	log.Info(fmt.Sprintf("%s: Received request from %s", s.Conn().LocalPeer(), s.Conn().RemotePeer()))
+	log.Info(fmt.Sprintf("%s: received request from %s", s.Conn().LocalPeer(), s.Conn().RemotePeer()))
 
 	stats.Record(wf.ctx, metrics.Messages.M(1))
 
@@ -103,7 +103,7 @@ func (wf *WakuFilter) onRequest(s network.Stream) {
 		// We're on a light node.
 		// This is a message push coming from a full node.
 
-		log.Info("Light node, received a message push ", *filterRPCRequest.Push)
+		log.Info("filter light node, received a message push. ", len(filterRPCRequest.Push.Messages), " messages")
 		wf.pushHandler(filterRPCRequest.RequestId, *filterRPCRequest.Push)
 	} else if filterRPCRequest.Request != nil {
 		// We're on a full node.
@@ -111,12 +111,12 @@ func (wf *WakuFilter) onRequest(s network.Stream) {
 		if filterRPCRequest.Request.Subscribe {
 			subscriber := Subscriber{peer: string(s.Conn().RemotePeer()), requestId: filterRPCRequest.RequestId, filter: *filterRPCRequest.Request}
 			wf.subscribers = append(wf.subscribers, subscriber)
-			log.Info("Full node, add a filter subscriber ", subscriber)
+			log.Info("filter full node, add a filter subscriber: ", subscriber.peer)
 
 			stats.Record(wf.ctx, metrics.FilterSubscriptions.M(int64(len(wf.subscribers))))
 		} else {
 			peerId := string(s.Conn().RemotePeer())
-			log.Info("Full node, remove a filter subscriber ", peerId)
+			log.Info("filter full node, remove a filter subscriber: ", peerId)
 			contentFilters := filterRPCRequest.Request.ContentFilters
 			var peerIdsToRemove []string
 			for _, subscriber := range wf.subscribers {
@@ -163,7 +163,7 @@ func (wf *WakuFilter) onRequest(s network.Stream) {
 func (wf *WakuFilter) peerListener() {
 	for e := range wf.peerChan {
 		if e.Connectedness == network.NotConnected {
-			log.Info("Filter Notification received ", e.Peer)
+			log.Info("filter Notification received ", e.Peer)
 			i := 0
 			// Delete subscribers matching deleted peer
 			for _, s := range wf.subscribers {
@@ -173,7 +173,7 @@ func (wf *WakuFilter) peerListener() {
 				}
 			}
 
-			log.Info("Filter, deleted subscribers: ", len(wf.subscribers)-i)
+			log.Info("filter, deleted subscribers: ", len(wf.subscribers)-i)
 			wf.subscribers = wf.subscribers[:i]
 		}
 	}
@@ -216,17 +216,17 @@ func (wf *WakuFilter) FilterListener() {
 
 			for _, filter := range subscriber.filter.ContentFilters {
 				if msg.ContentTopic == filter.ContentTopic {
-					log.Info("Found matching contentTopic ", filter, msg)
+					log.Info("found matching contentTopic ", filter, msg)
 					msgArr := []*pb.WakuMessage{msg}
 					// Do a message push to light node
 					pushRPC := &pb.FilterRPC{RequestId: subscriber.requestId, Push: &pb.MessagePush{Messages: msgArr}}
-					log.Info("Pushing a message to light node: ", pushRPC)
+					log.Info("pushing a message to light node: ", pushRPC)
 
 					conn, err := wf.h.NewStream(wf.ctx, peer.ID(subscriber.peer), WakuFilterProtocolId)
 
 					if err != nil {
 						// @TODO more sophisticated error handling here
-						log.Error("Failed to open peer stream")
+						log.Error("failed to open peer stream")
 						//waku_filter_errors.inc(labelValues = [dialFailure])
 						return err
 					}
@@ -270,7 +270,7 @@ func (wf *WakuFilter) Subscribe(ctx context.Context, request pb.FilterRequest) (
 
 			writer := protoio.NewDelimitedWriter(conn)
 			filterRPC := &pb.FilterRPC{RequestId: hex.EncodeToString(id), Request: &request}
-			log.Info("Sending filterRPC: ", filterRPC)
+			log.Info("sending filterRPC: ", filterRPC)
 			err = writer.WriteMsg(filterRPC)
 			if err != nil {
 				log.Error("failed to write message", err)
@@ -284,7 +284,7 @@ func (wf *WakuFilter) Subscribe(ctx context.Context, request pb.FilterRequest) (
 			return "", err
 		}
 	} else {
-		log.Info("Error selecting peer: ", err)
+		log.Info("error selecting peer: ", err)
 	}
 
 	return "", nil
@@ -308,7 +308,6 @@ func (wf *WakuFilter) Unsubscribe(ctx context.Context, request pb.FilterRequest)
 			if err != nil {
 				log.Error("failed to write message", err)
 			}
-			//return some(id)
 		} else {
 			// @TODO more sophisticated error handling here
 			log.Error("failed to connect to remote peer", err)
